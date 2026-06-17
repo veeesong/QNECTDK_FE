@@ -2,24 +2,32 @@ function Header({ title, onBack, rightButton }) {
   return (
     <div
       style={{
+        position: "relative",
         display: "flex",
         alignItems: "center",
-        justifyContent: "space-between",
-        padding: "16px",
+        justifyContent: "center",
+        padding: "16px 0",
+        marginBottom: "8px",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        {onBack && (
-          <button
-            onClick={onBack}
-            style={{ border: "none", background: "none" }}
-          >
-            ←
-          </button>
-        )}
-        <span style={{ fontSize: "18px", fontWeight: "bold" }}>{title}</span>
-      </div>
-      {rightButton}
+      {onBack && (
+        <button
+          onClick={onBack}
+          style={{
+            position: "absolute",
+            left: 0,
+            border: "none",
+            background: "none",
+            fontSize: "18px",
+          }}
+        >
+          ←
+        </button>
+      )}
+      <span style={{ fontSize: "18px", fontWeight: "bold" }}>{title}</span>
+      {rightButton && (
+        <div style={{ position: "absolute", right: 0 }}>{rightButton}</div>
+      )}
     </div>
   );
 }
