@@ -1,3 +1,5 @@
+import backIcon from "../assets/icon-back.png";
+
 function Header({ title, onBack, rightButton }) {
   return (
     <div
@@ -18,10 +20,14 @@ function Header({ title, onBack, rightButton }) {
             left: 0,
             border: "none",
             background: "none",
-            fontSize: "18px",
+            padding: 0,
           }}
         >
-          ←
+          <img
+            src={backIcon}
+            alt="뒤로가기"
+            style={{ width: "20px", height: "20px" }}
+          />
         </button>
       )}
       <span style={{ fontSize: "18px", fontWeight: "bold" }}>{title}</span>

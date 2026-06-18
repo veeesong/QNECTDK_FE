@@ -5,6 +5,7 @@ import Signup from "./pages/Signup";
 import VoteResult from "./pages/VoteResult";
 import BottomNav from "./components/BottomNav";
 import Home from "./pages/Home";
+import QrCode from "./pages/QrCode";
 
 function AppContent() {
   const location = useLocation();
@@ -30,6 +31,7 @@ function AppContent() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/vote-result" element={<VoteResult />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/qr-code" element={<QrCode />} />
       </Routes>
       {showNav && <BottomNav />}
     </div>
