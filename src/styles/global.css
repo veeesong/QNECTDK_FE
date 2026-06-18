@@ -33,3 +33,14 @@ body {
   position: relative;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
+
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+#qr-reader__dashboard,
+#qr-reader__header_message {
+  display: none !important;
+}

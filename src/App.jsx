@@ -6,10 +6,11 @@ import VoteResult from "./pages/VoteResult";
 import BottomNav from "./components/BottomNav";
 import Home from "./pages/Home";
 import QrCode from "./pages/QrCode";
+import QrScan from "./pages/QrScan";
 
 function AppContent() {
   const location = useLocation();
-  const hideNavPaths = ["/", "/login", "/signup"];
+  const hideNavPaths = ["/", "/login", "/signup", "/qr-code", "/qr-scan"];
   const showNav = !hideNavPaths.includes(location.pathname);
 
   return (
@@ -32,6 +33,7 @@ function AppContent() {
         <Route path="/vote-result" element={<VoteResult />} />
         <Route path="/home" element={<Home />} />
         <Route path="/qr-code" element={<QrCode />} />
+        <Route path="/qr-scan" element={<QrScan />} />
       </Routes>
       {showNav && <BottomNav />}
     </div>
