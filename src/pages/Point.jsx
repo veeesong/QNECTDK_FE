@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 
+import chickenImg from "../assets/animals/rooster.png"; // 기존 Chicken.svg 대신 사용
+
 function PointPage() {
   const navigate = useNavigate();
 
@@ -10,6 +12,7 @@ function PointPage() {
     <PageLayout>
       <Header title="포인트" onBack={() => navigate(-1)} />
 
+      {/* 사용자 프로필 카드 */}
       <div
         style={{
           backgroundColor: "#ffe3d1",
@@ -23,12 +26,14 @@ function PointPage() {
           marginTop: "8px",
         }}
       >
+        {/* 캐릭터 동그라미 프로필 */}
         <div
           style={{
             width: "80px",
             height: "80px",
             borderRadius: "50%",
             backgroundColor: "#FFEEE6",
+            border: "2px solid #ffccb0",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -37,13 +42,12 @@ function PointPage() {
           }}
         >
           <img
-            src="/images/Chicken.svg"
+            src={chickenImg}
             alt="Character"
             style={{
               width: "60px",
               height: "60px",
               objectFit: "contain",
-              display: "block",
             }}
           />
         </div>
@@ -93,7 +97,7 @@ function PointPage() {
           marginBottom: "24px",
         }}
       >
-        캐릭터 구매하러 가기 <span style={{ fontSize: "14px" }}>＞</span>
+        캐릭터 구매하러 가기 ＞
       </button>
 
       <hr
@@ -116,6 +120,7 @@ function PointPage() {
         포인트 받으러 가기
       </h3>
 
+      {/* 포인트 받기 섹션 1 */}
       <div
         style={{
           border: "2px solid #cfe2ff",
@@ -136,11 +141,11 @@ function PointPage() {
           }}
         >
           최근에 새로 추가한 친구의 퀴즈를 풀어
-          <br />
-          포인트를 모아보세요!
+          <br /> 포인트를 모아보세요!
         </p>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
+            onClick={() => navigate("/quiz")}
             style={{
               backgroundColor: "#8cbfff",
               color: "#000000",
@@ -157,6 +162,7 @@ function PointPage() {
         </div>
       </div>
 
+      {/* 포인트 받기 섹션 2 */}
       <div
         style={{
           border: "2px solid #e1f0b0",
@@ -176,8 +182,7 @@ function PointPage() {
           }}
         >
           지금 바로 오늘의 퀴즈를 풀면
-          <br />
-          5P를 드립니다!
+          <br /> 5P를 드립니다!
         </p>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button

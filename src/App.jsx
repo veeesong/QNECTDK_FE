@@ -18,6 +18,13 @@ import AddFriendUrl from "./pages/AddFriendUrl";
 import FriendProfile from "./pages/FriendProfile";
 import FriendList from "./pages/FriendList";
 import InterestEdit from "./pages/InterestEdit";
+import Quiz from "./pages/Quiz";
+import QuizConfirm from "./pages/QuizConfirm";
+import QuizSolve from "./pages/QuizSolve";
+import QuizResult from "./pages/QuizResult";
+import GroupList from "./pages/GroupList";
+import GroupDetail from "./pages/GroupDetail";
+import GroupCreate from "./pages/GroupCreate";
 
 function AppContent() {
   const location = useLocation();
@@ -30,6 +37,7 @@ function AppContent() {
     "/friend-accept",
   ];
   const showNav = !hideNavPaths.includes(location.pathname);
+
   return (
     <div
       style={{
@@ -71,6 +79,13 @@ function AppContent() {
           <Route path="/friend-profile" element={<FriendProfile />} />
           <Route path="/friend-list" element={<FriendList />} />
           <Route path="/interest-edit" element={<InterestEdit />} />
+          <Route path="/quiz" element={<Quiz />} />
+          <Route path="/quiz-confirm" element={<QuizConfirm />} />
+          <Route path="/quiz-solve" element={<QuizSolve />} />
+          <Route path="/quiz-result" element={<QuizResult />} />
+          <Route path="/group-list" element={<GroupList />} />
+          <Route path="/group-detail/:id" element={<GroupDetail />} />
+          <Route path="/group-create" element={<GroupCreate />} />
         </Routes>
       </div>
       {showNav && <BottomNav />}

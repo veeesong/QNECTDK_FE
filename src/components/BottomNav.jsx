@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   NavContainer,
   NavBtn,
@@ -6,17 +7,19 @@ import {
 } from "../styles/styledBottomNav";
 
 function BottomNav() {
+  const navigate = useNavigate();
+
   return (
     <NavContainer>
-      <NavBtn>
+      <NavBtn onClick={() => navigate("/home")}>
         <NavIcon src="/images/nav-home.svg" alt="홈" />
       </NavBtn>
 
-      <NavBtn>
+      <NavBtn onClick={() => navigate("/friend-list")}>
         <NavIcon src="/images/nav-friend.svg" alt="친구" />
       </NavBtn>
 
-      <QrBtn>
+      <QrBtn onClick={() => navigate("/qr-code")}>
         <img
           src="/images/nav-qr.svg"
           alt="QR코드"
@@ -24,11 +27,11 @@ function BottomNav() {
         />
       </QrBtn>
 
-      <NavBtn>
+      <NavBtn onClick={() => navigate("/quiz")}>
         <NavIcon src="/images/nav-quiz.svg" alt="퀴즈" />
       </NavBtn>
 
-      <NavBtn>
+      <NavBtn onClick={() => navigate("/mypage")}>
         <NavIcon src="/images/nav-profile.svg" alt="프로필" />
       </NavBtn>
     </NavContainer>

@@ -166,7 +166,13 @@ function FriendList() {
         {["내 친구", "그룹"].map((t) => (
           <div
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => {
+              if (t === "그룹") {
+                navigate("/group-list");
+              } else {
+                setTab(t);
+              }
+            }}
             style={{
               flex: 1,
               textAlign: "center",
