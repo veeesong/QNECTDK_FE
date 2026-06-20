@@ -259,7 +259,7 @@ function GroupDetail() {
         </div>
       </div>
 
-      {/* 그룹 이름 태그 - 왼쪽 상단 */}
+      {/* 그룹 이름 태그 */}
       <div
         style={{
           display: "flex",

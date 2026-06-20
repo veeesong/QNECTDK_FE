@@ -25,6 +25,7 @@ import QuizResult from "./pages/QuizResult";
 import GroupList from "./pages/GroupList";
 import GroupDetail from "./pages/GroupDetail";
 import GroupCreate from "./pages/GroupCreate";
+import Notification from "./pages/Notification";
 
 function AppContent() {
   const location = useLocation();
@@ -86,6 +87,7 @@ function AppContent() {
           <Route path="/group-list" element={<GroupList />} />
           <Route path="/group-detail/:id" element={<GroupDetail />} />
           <Route path="/group-create" element={<GroupCreate />} />
+          <Route path="/notification" element={<Notification />} />
         </Routes>
       </div>
       {showNav && <BottomNav />}

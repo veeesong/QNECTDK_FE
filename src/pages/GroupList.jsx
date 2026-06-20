@@ -37,7 +37,7 @@ const groupThemes = [
     name: "극예술연구회",
     count: 21,
     tags: ["중앙동아리", "연극"],
-    boxBg: "#FFFCE9", // 노란색으로 변경
+    boxBg: "#FFFCE9",
     profileTagBg: "#FFF9BC",
     border: "#FFE44C",
   },
@@ -181,7 +181,7 @@ function GroupList() {
         </span>
       </div>
 
-      {/* 포인트 차감 모달 */}
+      {/* 포인트 차감 */}
       {showModal && (
         <div
           style={{
@@ -322,7 +322,7 @@ function GroupList() {
               }}
             />
 
-            {/* 텍스트 정보 영역 */}
+            {/* 텍스트 정보 */}
             <div
               style={{
                 display: "flex",

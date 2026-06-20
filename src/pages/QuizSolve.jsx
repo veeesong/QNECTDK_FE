@@ -30,7 +30,7 @@ function QuizSolve() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isLocked, setIsLocked] = useState(false); // 🔥 클릭 잠금 상태 추가
+  const [isLocked, setIsLocked] = useState(false);
   const currentQuiz = quizList[currentIndex];
 
   const handleSelect = (idx) => {
@@ -46,7 +46,7 @@ function QuizSolve() {
       if (currentIndex < quizList.length - 1) {
         setCurrentIndex((prev) => prev + 1);
         setSelectedAnswer(null);
-        setIsLocked(false); // 잠금 해제
+        setIsLocked(false);
       } else {
         navigate("/quiz-result", { state: { friend, score: 80 } });
       }

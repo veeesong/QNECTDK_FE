@@ -17,7 +17,7 @@ import sheep from "../assets/animals/sheep.png";
 import snake from "../assets/animals/snake.png";
 import tiger from "../assets/animals/tiger.png";
 
-// 현재 내 친구 목록 (실제 데이터로 교체 필요)
+// 현재 내 친구 목록 (실제 데이터로 교체 필요함)
 const myFriends = [
   { id: 1, name: "정다연", animal: pig },
   { id: 2, name: "박하은", animal: rabbit },
@@ -38,7 +38,7 @@ function GroupCreate() {
   const [selectedFriends, setSelectedFriends] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState([]); // 추가된 태그 목록
+  const [tags, setTags] = useState([]);
 
   const filteredFriends = myFriends.filter((f) => f.name.includes(searchText));
 
@@ -73,7 +73,6 @@ function GroupCreate() {
     }
   };
 
-  // 태그 삭제
   const removeTag = (tagToRemove) => {
     setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
   };
@@ -447,7 +446,6 @@ function GroupCreate() {
       <div style={{ display: "flex", justifyContent: "center" }}>
         <button
           onClick={() => {
-            // 그룹 생성 로직 추가 필요 (groupName, selectedFriends, tags 사용)
             navigate("/group-list");
           }}
           style={{

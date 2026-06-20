@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 
-import chickenImg from "../assets/animals/rooster.png"; // 기존 Chicken.svg 대신 사용
+import chickenImg from "../assets/animals/rooster.png";
 
 function PointPage() {
   const navigate = useNavigate();

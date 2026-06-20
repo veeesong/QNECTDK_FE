@@ -1,8 +1,11 @@
+import { useNavigate } from "react-router-dom";
 import logoSmall from "../assets/logo-small.png";
 import bellIcon from "../assets/icon-bell.png";
 import scanIcon from "../assets/icon-scan.png";
 
 function TopBar() {
+  const navigate = useNavigate();
+
   return (
     <div
       style={{
@@ -17,12 +20,13 @@ function TopBar() {
         <img
           src={bellIcon}
           alt="알림"
-          style={{ width: "22px", height: "22px" }}
+          onClick={() => navigate("/notification")}
+          style={{ width: "22px", height: "22px", cursor: "pointer" }}
         />
         <img
           src={scanIcon}
           alt="QR 스캔"
-          style={{ width: "22px", height: "22px" }}
+          style={{ width: "22px", height: "22px", cursor: "pointer" }}
         />
       </div>
     </div>
