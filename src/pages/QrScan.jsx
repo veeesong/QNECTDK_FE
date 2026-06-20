@@ -20,7 +20,10 @@ function QrScan() {
           if (isRunningRef.current) {
             isRunningRef.current = false;
             html5QrCode.stop().then(() => {
-              navigate("/friend-accept", { state: { qrData: decodedText } });
+              // decodedText는 상대방의 publicCode 문자열
+              navigate("/friend-accept", {
+                state: { publicCode: decodedText },
+              });
             });
           }
         },

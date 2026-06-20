@@ -1,89 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import backIcon from "../assets/icon-back.png";
-import mouseImg from "../assets/animals/mouse.png";
-import roosterImg from "../assets/animals/rooster.png";
-import dragonImg from "../assets/animals/dragon.png";
-import sheepImg from "../assets/animals/sheep.png";
-import tigerImg from "../assets/animals/tiger.png";
-import snakeImg from "../assets/animals/snake.png";
 import searchIcon from "../assets/icon-search.png";
+import { getFriends } from "../api/friend";
+import { getCharacterImage } from "../utils/characterMap";
 
-const dummyFriends = [
-  {
-    id: 1,
-    name: "이무영",
-    img: mouseImg,
-    bgColor: "#dde6fb",
-    borderColor: "#a8c0f0",
-    tags: ["멋쟁이사자처럼", "인하대학교"],
-    birthCode: "05",
-    school: "인하대학교",
-    gender: "남성",
-    allTags: ["여행", "음악감상", "맛집투어", "카페알바"],
-  },
-  {
-    id: 2,
-    name: "이서현",
-    img: roosterImg,
-    bgColor: "#fde3e3",
-    borderColor: "#f5b8b8",
-    tags: ["대외활동", "숙명여자대학교"],
-    birthCode: "04",
-    school: "숙명여자대학교",
-    gender: "여성",
-    allTags: ["운동", "영화", "카페투어"],
-  },
-  {
-    id: 3,
-    name: "김민혁",
-    img: dragonImg,
-    bgColor: "#dcf5dc",
-    borderColor: "#a8e0a8",
-    tags: ["한국외국어대학교"],
-    birthCode: "01",
-    school: "한국외국어대학교",
-    gender: "남성",
-    allTags: ["게임", "밴드", "여행", "독서"],
-  },
-  {
-    id: 4,
-    name: "강민정",
-    img: sheepImg,
-    bgColor: "#fde3e3",
-    borderColor: "#f5b8b8",
-    tags: ["홍익대학교", "밴드부"],
-    birthCode: "06",
-    school: "홍익대학교",
-    gender: "여성",
-    allTags: ["음악감상", "밴드", "카페알바"],
-  },
-  {
-    id: 5,
-    name: "구서연",
-    img: tigerImg,
-    bgColor: "#fdf3c7",
-    borderColor: "#f0dd8a",
-    tags: ["경북대학교"],
-    birthCode: "03",
-    school: "경북대학교",
-    gender: "여성",
-    allTags: ["독서", "여행", "요리"],
-  },
-  {
-    id: 6,
-    name: "김미지",
-    img: snakeImg,
-    bgColor: "#dde6fb",
-    borderColor: "#a8c0f0",
-    tags: ["충북대학교"],
-    birthCode: "07",
-    school: "충북대학교",
-    gender: "여성",
-    allTags: ["영화", "음악감상", "반려동물", "게임"],
-  },
-];
+// 백엔드는 gender를 "MALE"/"FEMALE"로 줌 → 화면 표시용 한글 변환
+const genderLabel = (gender) => {
+  if (gender === "MALE") return "남성";
+  if (gender === "FEMALE") return "여성";
+  return "";
+};
+
+// birthYear(2005) -> 화면 표시용 "05" 형태로 변환 (공통 규칙)
+const birthYearShort = (birthYear) => {
+  if (!birthYear) return "";
+  return String(birthYear).slice(2, 4);
+};
+
+// 친구 캐릭터 배경색 - 디자인 다양성을 위해 순서대로 돌려씀
+const bgColors = ["#dde6fb", "#fde3e3", "#dcf5dc", "#fdf3c7", "#f0d7ff"];
+const borderColors = ["#a8c0f0", "#f5b8b8", "#a8e0a8", "#f0dd8a", "#d8b8f5"];
 
 function FriendList() {
   const navigate = useNavigate();
@@ -93,26 +31,69 @@ function FriendList() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
 
-  const toggleSelect = (id) => {
+  const [friends, setFriends] = useState([]); // [{ friendshipId, savedAt, person }]
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        // sortType -> API sort 파라미터로 변환
+        const sortParam = sortType === "이름 순" ? "name" : "recent";
+        const result = await getFriends(sortParam);
+        setFriends(result.data);
+      } catch (err) {
+        console.error("친구 목록 조회 실패", err);
+        setErrorMessage("친구 목록을 불러오지 못했습니다");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFriends();
+  }, [sortType]);
+
+  const toggleSelect = (friendshipId) => {
     if (!selectMode) {
       setSelectMode(true);
-      setSelectedIds([id]);
+      setSelectedIds([friendshipId]);
       return;
     }
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      prev.includes(friendshipId)
+        ? prev.filter((x) => x !== friendshipId)
+        : [...prev, friendshipId],
     );
   };
 
   const handleGroupify = () => {
-    console.log("그룹화할 친구:", selectedIds);
+    // 그룹화 기능 자체는 다른 팀원 담당 (POST /api/groups/with-members)
+    console.log("그룹화할 friendshipId들:", selectedIds);
     setSelectMode(false);
     setSelectedIds([]);
   };
 
-  const filteredFriends = dummyFriends.filter((f) =>
-    f.name.includes(searchText),
+  const filteredFriends = friends.filter((f) =>
+    f.person.name.includes(searchText),
   );
+
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <p style={{ textAlign: "center", marginTop: "40px" }}>불러오는 중...</p>
+      </PageLayout>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <PageLayout>
+        <p style={{ textAlign: "center", marginTop: "40px", color: "red" }}>
+          {errorMessage}
+        </p>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
@@ -151,7 +132,7 @@ function FriendList() {
             fontWeight: "bold",
           }}
         >
-          {dummyFriends.length}
+          {friends.length}
         </span>
       </div>
 
@@ -203,7 +184,7 @@ function FriendList() {
                 fontWeight: "bold",
               }}
             >
-              전체 {dummyFriends.length}
+              전체 {friends.length}
             </span>
             {["최근 저장 순", "이름 순"].map((s) => (
               <span
@@ -250,7 +231,6 @@ function FriendList() {
             <img
               src={searchIcon}
               alt="검색"
-              onClick={() => console.log("검색 실행:", searchText)}
               style={{ width: "18px", height: "18px", cursor: "pointer" }}
             />
           </div>
@@ -316,170 +296,192 @@ function FriendList() {
 
           {/* 친구 목록 */}
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {filteredFriends.map((friend, idx) => {
-              const isSelected = selectedIds.includes(friend.id);
-              const topTags = friend.allTags.slice(0, 3);
-              return (
-                <div key={friend.id}>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      alignItems: "flex-start",
-                      padding: "16px 0",
-                    }}
-                  >
+            {filteredFriends.length === 0 ? (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "#aaa",
+                  marginTop: "40px",
+                }}
+              >
+                {friends.length === 0
+                  ? "아직 친구가 없어요"
+                  : "검색 결과가 없어요"}
+              </p>
+            ) : (
+              filteredFriends.map((item, idx) => {
+                const { friendshipId, person } = item;
+                const isSelected = selectedIds.includes(friendshipId);
+                const colorIdx = idx % bgColors.length;
+                const topInterests = (person.interests || []).slice(0, 3);
+
+                return (
+                  <div key={friendshipId}>
                     <div
-                      onClick={() => toggleSelect(friend.id)}
                       style={{
-                        width: "56px",
-                        height: "56px",
-                        borderRadius: "50%",
-                        backgroundColor: friend.bgColor,
-                        border: isSelected
-                          ? "3px solid var(--color-primary)"
-                          : "none",
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        cursor: "pointer",
+                        gap: "12px",
+                        alignItems: "flex-start",
+                        padding: "16px 0",
                       }}
                     >
-                      {isSelected ? (
-                        <span
-                          style={{
-                            fontSize: "22px",
-                            color: "var(--color-primary)",
-                          }}
-                        >
-                          ✓
-                        </span>
-                      ) : (
-                        <img
-                          src={friend.img}
-                          alt={friend.name}
-                          style={{ width: "40px", height: "40px" }}
-                        />
-                      )}
-                    </div>
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div
+                        onClick={() => toggleSelect(friendshipId)}
                         style={{
+                          width: "56px",
+                          height: "56px",
+                          borderRadius: "50%",
+                          backgroundColor: bgColors[colorIdx],
+                          border: isSelected
+                            ? "3px solid var(--color-primary)"
+                            : "none",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "space-between",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          cursor: "pointer",
                         }}
                       >
+                        {isSelected ? (
+                          <span
+                            style={{
+                              fontSize: "22px",
+                              color: "var(--color-primary)",
+                            }}
+                          >
+                            ✓
+                          </span>
+                        ) : (
+                          <img
+                            src={getCharacterImage(person.characterId)}
+                            alt={person.name}
+                            style={{ width: "40px", height: "40px" }}
+                          />
+                        )}
+                      </div>
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "6px",
-                            minWidth: 0,
-                            flex: 1,
-                            overflow: "hidden",
+                            justifyContent: "space-between",
                           }}
                         >
-                          {/* 이름 박스 */}
-                          <span
+                          <div
                             style={{
-                              backgroundColor: friend.bgColor,
-                              border: `1px solid ${friend.borderColor}`,
-                              width: "57px",
-                              height: "25px",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "16px",
-                              fontWeight: "bold",
-                              borderRadius: "6px",
-                              flexShrink: 0,
-                              boxSizing: "border-box",
-                            }}
-                          >
-                            {friend.name}
-                          </span>
-
-                          {/* 학교/그룹 태그 - 가로 스크롤 */}
-                          <div
-                            className="tag-scroll"
-                            style={{
-                              display: "flex",
-                              gap: "4px",
-                              overflowX: "auto",
-                              whiteSpace: "nowrap",
+                              gap: "6px",
+                              minWidth: 0,
                               flex: 1,
+                              overflow: "hidden",
                             }}
                           >
-                            {friend.tags.map((tag) => (
-                              <span
-                                key={tag}
-                                style={{
-                                  backgroundColor: friend.bgColor,
-                                  border: `1px solid ${friend.borderColor}`,
-                                  height: "14px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  padding: "0 8px",
-                                  fontSize: "7px",
-                                  borderRadius: "8px",
-                                  flexShrink: 0,
-                                  whiteSpace: "nowrap",
-                                  boxSizing: "border-box",
-                                }}
-                              >
-                                {tag}
-                              </span>
-                            ))}
+                            {/* 이름 박스 */}
+                            <span
+                              style={{
+                                backgroundColor: bgColors[colorIdx],
+                                border: `1px solid ${borderColors[colorIdx]}`,
+                                minWidth: "57px",
+                                height: "25px",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "0 8px",
+                                fontSize: "16px",
+                                fontWeight: "bold",
+                                borderRadius: "6px",
+                                flexShrink: 0,
+                                boxSizing: "border-box",
+                              }}
+                            >
+                              {person.name}
+                            </span>
+
+                            {/* 그룹 태그(Chip) - 가로 스크롤 */}
+                            <div
+                              className="tag-scroll"
+                              style={{
+                                display: "flex",
+                                gap: "4px",
+                                overflowX: "auto",
+                                whiteSpace: "nowrap",
+                                flex: 1,
+                              }}
+                            >
+                              {(person.groupTags || []).map((tag) => (
+                                <span
+                                  key={tag}
+                                  style={{
+                                    backgroundColor: bgColors[colorIdx],
+                                    border: `1px solid ${borderColors[colorIdx]}`,
+                                    height: "14px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    padding: "0 8px",
+                                    fontSize: "7px",
+                                    borderRadius: "8px",
+                                    flexShrink: 0,
+                                    whiteSpace: "nowrap",
+                                    boxSizing: "border-box",
+                                  }}
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
                           </div>
+
+                          <span
+                            onClick={() =>
+                              navigate("/friend-profile", {
+                                state: { friend: { ...person, friendshipId } },
+                              })
+                            }
+                            style={{
+                              fontSize: "12px",
+                              color: "#aaa",
+                              cursor: "pointer",
+                              flexShrink: 0,
+                              marginLeft: "8px",
+                            }}
+                          >
+                            더보기 &gt;
+                          </span>
                         </div>
 
-                        <span
-                          onClick={() =>
-                            navigate("/friend-profile", { state: { friend } })
-                          }
+                        <p
                           style={{
-                            fontSize: "12px",
-                            color: "#aaa",
-                            cursor: "pointer",
-                            flexShrink: 0,
-                            marginLeft: "8px",
+                            fontSize: "13px",
+                            color: "#666",
+                            margin: "6px 0 4px",
+                            textAlign: "left",
                           }}
                         >
-                          더보기 &gt;
-                        </span>
+                          {birthYearShort(person.birthYear)} |{" "}
+                          {person.school || "학교 미입력"} |{" "}
+                          {genderLabel(person.gender)}
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "13px",
+                            color: "#222",
+                            margin: 0,
+                            textAlign: "left",
+                          }}
+                        >
+                          {topInterests.map((t) => `#${t}`).join(" ")}
+                        </p>
                       </div>
-
-                      <p
-                        style={{
-                          fontSize: "13px",
-                          color: "#666",
-                          margin: "6px 0 4px",
-                          textAlign: "left",
-                        }}
-                      >
-                        {friend.birthCode} | {friend.school} | {friend.gender}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "13px",
-                          color: "#222",
-                          margin: 0,
-                          textAlign: "left",
-                        }}
-                      >
-                        {topTags.map((t) => `#${t}`).join(" ")}
-                      </p>
                     </div>
+                    {idx < filteredFriends.length - 1 && (
+                      <div style={{ borderTop: "1px solid #eee" }} />
+                    )}
                   </div>
-                  {idx < filteredFriends.length - 1 && (
-                    <div style={{ borderTop: "1px solid #eee" }} />
-                  )}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
           <div style={{ height: "120px", flexShrink: 0 }} />
         </>

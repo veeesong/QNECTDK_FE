@@ -1,21 +1,65 @@
 import { QRCodeSVG } from "qrcode.react";
+import { useEffect, useState } from "react";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 import Button from "../components/Button";
 import shareIcon from "../assets/icon-share.png";
+import { getMyShareInfo, getMyProfile } from "../api/profile";
 
 function QrCode() {
-  // 내 프로필 정보 (나중에는 로그인한 사용자 정보로 교체)
-  const myProfile = {
-    name: "강지수",
-    birthYear: "03년생",
-    school: "연세대학교",
-    gender: "여성",
-    mbti: "ENFP",
+  const [shareInfo, setShareInfo] = useState(null); // { publicCode, shareUrl }
+  const [profile, setProfile] = useState(null); // { name, school, mbti, ... }
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // 두 API를 동시에 호출 (QR값/링크는 share에서, 이름/학교/MBTI는 profile에서)
+        const [shareResult, profileResult] = await Promise.all([
+          getMyShareInfo(),
+          getMyProfile(),
+        ]);
+        setShareInfo(shareResult.data);
+        setProfile(profileResult.data);
+      } catch (err) {
+        console.error("정보 조회 실패", err);
+        setErrorMessage("정보를 불러오지 못했습니다");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleShare = () => {
+    if (!shareInfo) return;
+    console.log("공유하기", shareInfo);
   };
 
-  const qrValue = JSON.stringify(myProfile);
-  const myLink = "https://forms.gle/ruK1P7kak8ghN";
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <Header title="QR Code" onBack={() => window.history.back()} />
+        <p style={{ textAlign: "center", marginTop: "40px" }}>불러오는 중...</p>
+      </PageLayout>
+    );
+  }
+
+  if (errorMessage || !shareInfo || !profile) {
+    return (
+      <PageLayout>
+        <Header title="QR Code" onBack={() => window.history.back()} />
+        <p style={{ textAlign: "center", marginTop: "40px", color: "red" }}>
+          {errorMessage || "정보를 불러오지 못했습니다"}
+        </p>
+      </PageLayout>
+    );
+  }
+
+  // QR 안에는 publicCode만 담음 (스캔하는 쪽에서 이 코드로 프로필을 조회)
+  const qrValue = shareInfo.publicCode;
 
   return (
     <PageLayout>
@@ -45,10 +89,10 @@ function QrCode() {
               margin: "16px 0 4px",
             }}
           >
-            {myProfile.name}
+            {profile.name}
           </p>
           <p style={{ color: "#888", fontSize: "13px", margin: "0 0 20px" }}>
-            {myProfile.school} &nbsp;|&nbsp; {myProfile.mbti}
+            {profile.school} &nbsp;|&nbsp; {profile.mbti}
           </p>
 
           <div
@@ -71,7 +115,7 @@ function QrCode() {
                 flex: 1,
               }}
             >
-              {myLink}
+              {shareInfo.shareUrl}
             </span>
             <div
               style={{
@@ -93,7 +137,7 @@ function QrCode() {
       <div style={{ marginTop: "20px" }}>
         <Button
           label="공유하기"
-          onClick={() => {}}
+          onClick={handleShare}
           variant="primary"
           size="full"
         />
