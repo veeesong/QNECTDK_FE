@@ -244,6 +244,7 @@ function Home() {
         포인트 현황
       </h3>
       <div
+        onClick={() => navigate("/point")}
         style={{
           backgroundColor: "#fdf3e3",
           border: "2px solid #f5e3bd",
@@ -252,6 +253,7 @@ function Home() {
           display: "flex",
           alignItems: "center",
           gap: "14px",
+          cursor: "pointer",
         }}
       >
         <div
