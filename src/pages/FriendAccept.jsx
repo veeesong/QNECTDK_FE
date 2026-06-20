@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Button from "../components/Button";
-import mouseImg from "../assets/animals/mouse.png";
 import { getProfileByPublicCode } from "../api/profile";
 import {
   getReceivedRequests,
   acceptFriendRequest,
   requestFriend,
 } from "../api/friend";
+import { getCharacterImage } from "../utils/characterMap";
 
 // 백엔드는 gender를 "MALE"/"FEMALE"로 내려줌 → 화면 표시용 한글로 변환
 const genderLabel = (gender) => {
@@ -144,7 +144,7 @@ function FriendAccept() {
           }}
         >
           <img
-            src={mouseImg}
+            src={getCharacterImage(friend.characterId)}
             alt={friend.name}
             style={{ width: "90px", height: "90px", objectFit: "contain" }}
           />

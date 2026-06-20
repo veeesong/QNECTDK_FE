@@ -30,3 +30,9 @@ export const checkLoginId = async (loginId) => {
   });
   return response.data; // { success, data: { available: true/false } }
 };
+
+// 로그아웃
+export const logout = async () => {
+  const response = await axiosInstance.post("/api/auth/logout");
+  return response.data;
+};

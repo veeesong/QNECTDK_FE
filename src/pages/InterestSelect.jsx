@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 import travelIcon from "../assets/categories/travel.png";
@@ -10,47 +11,14 @@ import selfDevIcon from "../assets/categories/self-dev.png";
 import petIcon from "../assets/categories/pet.png";
 import bookIcon from "../assets/categories/book.png";
 import movieIcon from "../assets/categories/movie.png";
-import { useNavigate } from "react-router-dom";
+import {
+  getAllInterests,
+  getMyInterests,
+  updateMyInterests,
+} from "../api/interest";
 
-const categories = {
-  여행: ["동남아", "일본", "중국", "미국", "유럽", "캐나다", "남미", "호주"],
-  운동: ["요가", "헬스", "필라테스"],
-  음악: ["콘서트", "페스티벌", "락", "밴드"],
-  게임: ["롤", "오버워치", "배틀그라운드", "루미큐브", "서든어택"],
-  요리: ["한식", "일식", "중식", "양식", "동남아 요리", "맛집투어"],
-  자기계발: ["독서", "주식"],
-  반려동물: ["강아지", "고양이", "도마뱀"],
-  독서: [
-    "철학",
-    "종교",
-    "사회과학",
-    "자연과학",
-    "기술과학",
-    "예술",
-    "언어",
-    "문학",
-    "역사",
-  ],
-  영화: [
-    "공포",
-    "로맨스",
-    "SF",
-    "액션",
-    "코미디",
-    "스릴러",
-    "범죄",
-    "가족",
-    "판타지",
-    "오컬트",
-    "누아르",
-    "음악",
-    "다큐멘터리",
-    "모험",
-    "재난",
-    "전쟁",
-  ],
-};
-
+// 카테고리 이름 -> 아이콘 매핑 (백엔드는 아이콘 정보를 안 주므로 프론트에서 직접 매칭)
+// 백엔드가 내려주는 category 문자열이 정확히 이 키와 일치해야 아이콘이 표시됨
 const categoryIcons = {
   여행: travelIcon,
   운동: exerciseIcon,
@@ -65,18 +33,126 @@ const categoryIcons = {
 
 function InterestSelect() {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [selectedTags, setSelectedTags] = useState([]);
 
-  const toggleTag = (tag) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    );
+  // categories: [{ category, interests: [{ id, name }] }]
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const [activeCategory, setActiveCategory] = useState(null);
+  // 선택된 관심사를 id로 관리 (Set으로 관리하면 추가/삭제가 빠름)
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  // 화면을 처음 열었을 때 서버에 저장돼 있던 id들 (변경 여부 비교용)
+  const [originalIds, setOriginalIds] = useState(new Set());
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [allResult, myResult] = await Promise.all([
+          getAllInterests(),
+          getMyInterests(),
+        ]);
+
+        setCategories(allResult.data);
+
+        const myIds = new Set(myResult.data.map((item) => item.id));
+        setSelectedIds(myIds);
+        setOriginalIds(myIds);
+      } catch (err) {
+        console.error("관심사 목록 조회 실패", err);
+        setErrorMessage("관심사 정보를 불러오지 못했습니다");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const toggleTag = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
+
+  // id 집합이 같은지 비교 (저장이 필요한지 판단용)
+  const idsAreEqual = (a, b) => {
+    if (a.size !== b.size) return false;
+    for (const id of a) {
+      if (!b.has(id)) return false;
+    }
+    return true;
+  };
+
+  // 선택값을 서버에 저장
+  const saveInterests = async () => {
+    if (idsAreEqual(selectedIds, originalIds)) {
+      // 변경 사항 없으면 굳이 요청 안 보냄
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateMyInterests(Array.from(selectedIds));
+      setOriginalIds(new Set(selectedIds));
+    } catch (err) {
+      console.error("관심사 저장 실패", err);
+      setErrorMessage("저장에 실패했습니다");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 태그 화면(상세)에서 카테고리 목록으로 돌아갈 때 저장
+  const handleBackFromTags = async () => {
+    await saveInterests();
+    setActiveCategory(null);
+  };
+
+  // 카테고리 목록 화면에서 완전히 나갈 때도 한 번 더 저장 보장
+  const handleBackFromCategories = async () => {
+    await saveInterests();
+    window.history.back();
+  };
+
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <Header title="프로필" onBack={() => window.history.back()} />
+        <p style={{ textAlign: "center", marginTop: "40px" }}>불러오는 중...</p>
+      </PageLayout>
+    );
+  }
+
+  if (errorMessage && categories.length === 0) {
+    return (
+      <PageLayout>
+        <Header title="프로필" onBack={() => window.history.back()} />
+        <p style={{ textAlign: "center", marginTop: "40px", color: "red" }}>
+          {errorMessage}
+        </p>
+      </PageLayout>
+    );
+  }
+
+  const activeCategoryData = categories.find(
+    (c) => c.category === activeCategory,
+  );
 
   return (
     <PageLayout>
-      <Header title="프로필" onBack={() => window.history.back()} />
+      <Header
+        title="프로필"
+        onBack={activeCategory ? handleBackFromTags : handleBackFromCategories}
+      />
 
       {!activeCategory ? (
         <>
@@ -96,10 +172,10 @@ function InterestSelect() {
               gap: "16px",
             }}
           >
-            {Object.keys(categoryIcons).map((cat) => (
+            {categories.map((cat) => (
               <div
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
+                key={cat.category}
+                onClick={() => setActiveCategory(cat.category)}
                 style={{ textAlign: "center", cursor: "pointer" }}
               >
                 <div
@@ -114,13 +190,17 @@ function InterestSelect() {
                     margin: "0 auto 8px",
                   }}
                 >
-                  <img
-                    src={categoryIcons[cat]}
-                    alt={cat}
-                    style={{ width: "26px", height: "26px" }}
-                  />
+                  {categoryIcons[cat.category] ? (
+                    <img
+                      src={categoryIcons[cat.category]}
+                      alt={cat.category}
+                      style={{ width: "26px", height: "26px" }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: "11px" }}>{cat.category}</span>
+                  )}
                 </div>
-                <p style={{ fontSize: "13px" }}>{cat}</p>
+                <p style={{ fontSize: "13px" }}>{cat.category}</p>
               </div>
             ))}
             <div
@@ -155,13 +235,20 @@ function InterestSelect() {
             }}
           >
             {activeCategory}
+            {isSaving && (
+              <span
+                style={{ fontSize: "12px", color: "#aaa", marginLeft: "8px" }}
+              >
+                저장 중...
+              </span>
+            )}
           </p>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {categories[activeCategory]?.map((tag) => (
+            {activeCategoryData?.interests.map((interest) => (
               <span
-                key={tag}
-                onClick={() => toggleTag(tag)}
+                key={interest.id}
+                onClick={() => toggleTag(interest.id)}
                 style={{
                   border: "1px solid #ddd",
                   borderRadius: "20px",
@@ -176,13 +263,13 @@ function InterestSelect() {
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  backgroundColor: selectedTags.includes(tag)
+                  backgroundColor: selectedIds.has(interest.id)
                     ? "var(--color-primary)"
                     : "white",
-                  color: selectedTags.includes(tag) ? "white" : "#333",
+                  color: selectedIds.has(interest.id) ? "white" : "#333",
                 }}
               >
-                {tag}
+                {interest.name}
               </span>
             ))}
           </div>

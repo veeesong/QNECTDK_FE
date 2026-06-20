@@ -3,9 +3,17 @@ import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 import Button from "../components/Button";
-import roosterImg from "../assets/animals/rooster.png";
 import editIcon from "../assets/icon-edit.png";
 import { getMyProfile, updateMyProfile } from "../api/profile";
+import { getCharacterImage } from "../utils/characterMap";
+
+// 프로필 이미지 표시 우선순위: 사용자 업로드 사진(imageUrl) > 적용된 캐릭터(characterId) > 기본 띠 캐릭터
+// characterId가 null이면 서버가 자동으로 띠 캐릭터를 characterId 자리에 채워서 줄 가능성이 높음 (확인 필요)
+// 그래도 혹시 둘 다 없는 경우를 대비해 getCharacterImage가 기본값(쥐)으로 폴백해줌
+const getProfileDisplayImage = (profile) => {
+  if (profile.imageUrl) return profile.imageUrl;
+  return getCharacterImage(profile.characterId);
+};
 
 // 백엔드는 gender를 "MALE"/"FEMALE"로 줌 → 화면 표시용 한글 변환
 const genderLabel = (gender) => {
@@ -192,6 +200,23 @@ function MyPage() {
     <PageLayout>
       <Header title="프로필" onBack={() => window.history.back()} />
 
+      {!profile.profileCompleted && (
+        <div
+          style={{
+            backgroundColor: "#fff3cd",
+            border: "1px solid #ffe69c",
+            borderRadius: "12px",
+            padding: "12px 16px",
+            marginTop: "16px",
+            fontSize: "13px",
+            color: "#856404",
+            textAlign: "center",
+          }}
+        >
+          아직 프로필을 다 작성하지 않았어요. 학교, MBTI 등을 채워보세요!
+        </div>
+      )}
+
       <div
         style={{ textAlign: "center", marginTop: "24px", marginBottom: "20px" }}
       >
@@ -208,7 +233,7 @@ function MyPage() {
             }}
           >
             <img
-              src={profile.imageUrl || roosterImg}
+              src={getProfileDisplayImage(profile)}
               alt="캐릭터"
               style={{ width: "85px", height: "85px" }}
             />

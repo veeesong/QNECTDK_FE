@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import TopBar from "../components/TopBar";
@@ -5,15 +6,53 @@ import mouseImg from "../assets/animals/mouse.png";
 import seaImg from "../assets/sea.png";
 import mountainImg from "../assets/mountain.png";
 import refreshIcon from "../assets/icon-refresh.png";
+import { getTodayQuiz, submitTodayAnswer } from "../api/daily";
 
 function Home() {
   const navigate = useNavigate();
+
+  const [quiz, setQuiz] = useState(null); // { content, optionA, optionB, answered, mySelection }
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const result = await getTodayQuiz();
+        setQuiz(result.data);
+      } catch (err) {
+        console.error("오늘의 퀴즈 조회 실패", err);
+        setErrorMessage("퀴즈를 불러오지 못했습니다");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuiz();
+  }, []);
+
+  const handleSelect = async (selected) => {
+    if (quiz?.answered || isSubmitting) return; // 이미 답했으면 다시 제출 안 함
+
+    setIsSubmitting(true);
+    try {
+      await submitTodayAnswer(selected);
+      // 제출 성공하면 화면 상태를 "답변 완료"로 갱신
+      setQuiz((prev) => ({ ...prev, answered: true, mySelection: selected }));
+    } catch (err) {
+      console.error("퀴즈 답변 제출 실패", err);
+      setErrorMessage("답변 제출에 실패했습니다");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <PageLayout>
       <TopBar />
 
-      {/* 이 사람을 기억하나요 카드 */}
+      {/* 이 사람을 기억하나요 카드 - 친구 인식 퀴즈, 별도 API 그룹이라 더미 유지 */}
       <div
         style={{
           backgroundColor: "#eaf3ff",
@@ -115,7 +154,7 @@ function Home() {
         </div>
       </div>
 
-      {/* 출석 배너 */}
+      {/* 출석 배너 - 별도 API 그룹(알림/출석), 더미 유지 */}
       <div
         style={{
           backgroundColor: "#e3d7fb",
@@ -141,7 +180,7 @@ function Home() {
         />
       </div>
 
-      {/* 오늘의 퀴즈 */}
+      {/* 오늘의 퀴즈 - 데일리 그룹 API 연동 */}
       <h3 style={{ margin: "0 0 12px", fontSize: "18px", textAlign: "left" }}>
         오늘의 퀴즈
       </h3>
@@ -154,92 +193,157 @@ function Home() {
           marginBottom: "24px",
         }}
       >
-        <p
-          style={{
-            textAlign: "center",
-            fontWeight: "bold",
-            fontSize: "16px",
-            margin: "0 0 16px",
-          }}
-        >
-          더 좋아하는 건?
-        </p>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "20px",
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
+        {isLoading ? (
+          <p style={{ textAlign: "center", color: "#aaa", margin: 0 }}>
+            불러오는 중...
+          </p>
+        ) : errorMessage && !quiz ? (
+          <p style={{ textAlign: "center", color: "red", margin: 0 }}>
+            {errorMessage}
+          </p>
+        ) : (
+          <>
+            <p
+              style={{
+                textAlign: "center",
+                fontWeight: "bold",
+                fontSize: "16px",
+                margin: "0 0 16px",
+              }}
+            >
+              {quiz.content}
+            </p>
             <div
               style={{
-                width: "100px",
-                height: "100px",
-                borderRadius: "20px",
-                backgroundColor: "#bfe6f5",
-                border: "2px solid #8fd1ec",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                gap: "20px",
               }}
             >
-              <img
-                src={seaImg}
-                alt="바다"
-                style={{ width: "60px", height: "60px", objectFit: "contain" }}
-              />
+              <div
+                onClick={() => handleSelect("A")}
+                style={{
+                  textAlign: "center",
+                  cursor: quiz.answered ? "default" : "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100px",
+                    height: "100px",
+                    borderRadius: "20px",
+                    backgroundColor: "#bfe6f5",
+                    border:
+                      quiz.answered && quiz.mySelection === "A"
+                        ? "3px solid var(--color-primary)"
+                        : "2px solid #8fd1ec",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity:
+                      quiz.answered && quiz.mySelection !== "A" ? 0.5 : 1,
+                  }}
+                >
+                  <img
+                    src={seaImg}
+                    alt={quiz.optionA}
+                    style={{
+                      width: "60px",
+                      height: "60px",
+                      objectFit: "contain",
+                    }}
+                  />
+                </div>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    marginTop: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {quiz.optionA}
+                </p>
+              </div>
+              <span style={{ fontWeight: "bold", fontSize: "15px" }}>VS</span>
+              <div
+                onClick={() => handleSelect("B")}
+                style={{
+                  textAlign: "center",
+                  cursor: quiz.answered ? "default" : "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100px",
+                    height: "100px",
+                    borderRadius: "20px",
+                    backgroundColor: "#cdeec2",
+                    border:
+                      quiz.answered && quiz.mySelection === "B"
+                        ? "3px solid var(--color-primary)"
+                        : "2px solid #aee29c",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity:
+                      quiz.answered && quiz.mySelection !== "B" ? 0.5 : 1,
+                  }}
+                >
+                  <img
+                    src={mountainImg}
+                    alt={quiz.optionB}
+                    style={{
+                      width: "60px",
+                      height: "60px",
+                      objectFit: "contain",
+                    }}
+                  />
+                </div>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    marginTop: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {quiz.optionB}
+                </p>
+              </div>
             </div>
-            <p
-              style={{ fontSize: "14px", marginTop: "8px", fontWeight: "bold" }}
-            >
-              바다
-            </p>
-          </div>
-          <span style={{ fontWeight: "bold", fontSize: "15px" }}>VS</span>
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{
-                width: "100px",
-                height: "100px",
-                borderRadius: "20px",
-                backgroundColor: "#cdeec2",
-                border: "2px solid #aee29c",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <img
-                src={mountainImg}
-                alt="산"
-                style={{ width: "60px", height: "60px", objectFit: "contain" }}
-              />
-            </div>
-            <p
-              style={{ fontSize: "14px", marginTop: "8px", fontWeight: "bold" }}
-            >
-              산
-            </p>
-          </div>
-        </div>
-        <p
-          onClick={() => navigate("/vote-result")}
-          style={{
-            textAlign: "center",
-            fontSize: "13px",
-            color: "#888",
-            marginTop: "16px",
-            marginBottom: 0,
-            cursor: "pointer",
-          }}
-        >
-          친구 투표 결과 보기 &gt;
-        </p>
+
+            {quiz.answered ? (
+              <p
+                onClick={() => navigate("/vote-result")}
+                style={{
+                  textAlign: "center",
+                  fontSize: "13px",
+                  color: "#888",
+                  marginTop: "16px",
+                  marginBottom: 0,
+                  cursor: "pointer",
+                }}
+              >
+                친구 투표 결과 보기 &gt;
+              </p>
+            ) : (
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "13px",
+                  color: "#aaa",
+                  marginTop: "16px",
+                  marginBottom: 0,
+                }}
+              >
+                {isSubmitting ? "제출 중..." : "선택지를 눌러 답해보세요"}
+              </p>
+            )}
+          </>
+        )}
       </div>
 
-      {/* 포인트 현황 */}
+      {/* 포인트 현황 - 상점/포인트 그룹, 더미 유지 */}
       <h3 style={{ margin: "0 0 12px", fontSize: "18px", textAlign: "left" }}>
         포인트 현황
       </h3>
