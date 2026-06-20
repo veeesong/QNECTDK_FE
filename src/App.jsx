@@ -11,6 +11,8 @@ import FriendAccept from "./pages/FriendAccept";
 import MyPage from "./pages/MyPage";
 import CharacterChange from "./pages/CharacterChange";
 import InterestSelect from "./pages/InterestSelect";
+import PointPage from "./pages/Point";
+import BuyCharacter from "./pages/BuyCharacter";
 import AddFriend from "./pages/AddFriend";
 import AddFriendUrl from "./pages/AddFriendUrl";
 import FriendProfile from "./pages/FriendProfile";
@@ -28,7 +30,6 @@ function AppContent() {
     "/friend-accept",
   ];
   const showNav = !hideNavPaths.includes(location.pathname);
-
   return (
     <div
       style={{
@@ -42,9 +43,7 @@ function AppContent() {
         overflow: "hidden",
       }}
     >
-      {/* 상태바 영역 (시간/배터리 자리, 비워둠) */}
       <div style={{ height: "24px", flexShrink: 0 }} />
-
       <div
         style={{
           flex: 1,
@@ -65,6 +64,8 @@ function AppContent() {
           <Route path="/mypage" element={<MyPage />} />
           <Route path="/character-change" element={<CharacterChange />} />
           <Route path="/interest-select" element={<InterestSelect />} />
+          <Route path="/point" element={<PointPage />} />
+          <Route path="/buy-character" element={<BuyCharacter />} />
           <Route path="/add-friend" element={<AddFriend />} />
           <Route path="/add-friend-url" element={<AddFriendUrl />} />
           <Route path="/friend-profile" element={<FriendProfile />} />
@@ -72,7 +73,6 @@ function AppContent() {
           <Route path="/interest-edit" element={<InterestEdit />} />
         </Routes>
       </div>
-
       {showNav && <BottomNav />}
     </div>
   );
