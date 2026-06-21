@@ -5,7 +5,7 @@ import backIcon from "../assets/icon-back.png";
 import { getGroupMembers } from "../api/group";
 import { getCharacterImage } from "../utils/characterMap";
 
-// 그룹 색상 테마 (groupId % 5 로 순환)
+// 그룹 색상 테마
 const colorThemes = [
   {
     boxBg: "#F2F8FF",
@@ -174,7 +174,6 @@ function GroupDetail() {
             ) : (
               members.map((m) => {
                 const p = m.person;
-                // birthYear 뒤 2자리로 변환 (예: 2005 → "05")
                 const grade = p.birthYear ? String(p.birthYear).slice(2) : "-";
 
                 return (
