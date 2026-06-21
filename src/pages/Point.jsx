@@ -1,12 +1,35 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
-
-import chickenImg from "../assets/animals/rooster.png";
+import { getMyProfile } from "../api/profile";
+import { getPointBalance } from "../api/points";
+import { getCharacterImage } from "../utils/characterMap";
 
 function PointPage() {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, balanceRes] = await Promise.all([
+          getMyProfile(),
+          getPointBalance(),
+        ]);
+        setProfile(profileRes.data);
+        setBalance(balanceRes.data.balance);
+      } catch (err) {
+        console.error("데이터 불러오기 실패", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <PageLayout>
@@ -26,7 +49,6 @@ function PointPage() {
           marginTop: "8px",
         }}
       >
-        {/* 캐릭터 동그라미 프로필 */}
         <div
           style={{
             width: "80px",
@@ -41,15 +63,13 @@ function PointPage() {
             overflow: "hidden",
           }}
         >
-          <img
-            src={chickenImg}
-            alt="Character"
-            style={{
-              width: "60px",
-              height: "60px",
-              objectFit: "contain",
-            }}
-          />
+          {!isLoading && profile && (
+            <img
+              src={getCharacterImage(profile.characterId)}
+              alt="Character"
+              style={{ width: "60px", height: "60px", objectFit: "contain" }}
+            />
+          )}
         </div>
 
         <div style={{ textAlign: "left" }}>
@@ -61,7 +81,7 @@ function PointPage() {
               color: "#333",
             }}
           >
-            박하은
+            {isLoading ? "..." : profile?.name}
           </div>
           <div
             style={{
@@ -73,7 +93,7 @@ function PointPage() {
               color: "#333",
             }}
           >
-            🪙 1,250P
+            🪙 {isLoading ? "..." : `${balance?.toLocaleString()}P`}
           </div>
         </div>
       </div>
@@ -186,6 +206,7 @@ function PointPage() {
         </p>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button
+            onClick={() => navigate("/home")}
             style={{
               backgroundColor: "#cbe368",
               color: "#444",

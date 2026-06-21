@@ -1,62 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import backIcon from "../assets/icon-back.png";
 import searchIcon from "../assets/icon-search.png";
+import { getGroups } from "../api/group";
+import { getPointBalance } from "../api/points";
 
-const groupThemes = [
-  {
-    id: 1,
-    name: "24학번 동기",
-    count: 18,
-    tags: ["동기", "학교", "OT"],
-    boxBg: "#F2F8FF",
-    profileTagBg: "#C2E5FF",
-    border: "#61B8FF",
-  },
-  {
-    id: 2,
-    name: "멋쟁이사자처럼",
-    count: 23,
-    tags: ["동아리", "해커톤"],
-    boxBg: "#FFF3E8",
-    profileTagBg: "#FFE1C2",
-    border: "#FFBC92",
-  },
-  {
-    id: 3,
-    name: "912호 룸메",
-    count: 4,
-    tags: ["기숙사"],
-    boxBg: "#F6FFE6",
-    profileTagBg: "#EBFFBC",
-    border: "#B9EE98",
-  },
-  {
-    id: 4,
-    name: "극예술연구회",
-    count: 21,
-    tags: ["중앙동아리", "연극"],
-    boxBg: "#FFFCE9",
-    profileTagBg: "#FFF9BC",
-    border: "#FFE44C",
-  },
-  {
-    id: 5,
-    name: "연합프로젝트 1조",
-    count: 6,
-    tags: ["국민대학교", "동덕여자대학교"],
-    boxBg: "#F9EEFF",
-    profileTagBg: "#D7C9FF",
-    border: "#9B69FF",
-  },
+// 그룹 카드 색상 테마 (순서대로 순환)
+const colorThemes = [
+  { boxBg: "#F2F8FF", profileTagBg: "#C2E5FF", border: "#61B8FF" },
+  { boxBg: "#FFF3E8", profileTagBg: "#FFE1C2", border: "#FFBC92" },
+  { boxBg: "#F6FFE6", profileTagBg: "#EBFFBC", border: "#B9EE98" },
+  { boxBg: "#FFFCE9", profileTagBg: "#FFF9BC", border: "#FFE44C" },
+  { boxBg: "#F9EEFF", profileTagBg: "#D7C9FF", border: "#9B69FF" },
 ];
 
 function GroupList() {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const filteredGroups = groupThemes.filter((g) => g.name.includes(searchText));
+  const [groups, setGroups] = useState([]);
+  const [balance, setBalance] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const groupRes = await getGroups();
+        setGroups(groupRes.data);
+      } catch (err) {
+        console.error("그룹 목록 불러오기 실패", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // 모달 열 때만 포인트 조회
+  const handleOpenModal = async () => {
+    try {
+      const balanceRes = await getPointBalance();
+      setBalance(balanceRes.data.balance);
+    } catch (err) {
+      console.error("포인트 조회 실패", err);
+    }
+    setShowModal(true);
+  };
+
+  const filteredGroups = groups.filter((g) => g.name.includes(searchText));
 
   return (
     <PageLayout>
@@ -154,7 +146,7 @@ function GroupList() {
 
       {/* 그룹 추가 버튼 */}
       <div
-        onClick={() => setShowModal(true)}
+        onClick={handleOpenModal}
         style={{
           display: "flex",
           alignItems: "center",
@@ -181,7 +173,7 @@ function GroupList() {
         </span>
       </div>
 
-      {/* 포인트 차감 */}
+      {/* 포인트 차감 모달 */}
       {showModal && (
         <div
           style={{
@@ -228,19 +220,17 @@ function GroupList() {
                 marginBottom: "12px",
               }}
             >
-              현재 포인트 : 1250P
+              현재 포인트 :{" "}
+              {balance !== null ? `${balance.toLocaleString()}P` : "..."}
             </p>
             <p style={{ fontSize: "13px", marginBottom: "28px" }}>
-              10P를 사용하여 그룹을 추가하시겠습니까?
+              {groups.length >= 5
+                ? "10P를 사용하여 그룹을 추가하시겠습니까?"
+                : `무료로 그룹을 추가하시겠습니까? (${groups.length}/5)`}
             </p>
 
-            {/* 버튼 영역 */}
             <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                justifyContent: "center",
-              }}
+              style={{ display: "flex", gap: "12px", justifyContent: "center" }}
             >
               <button
                 onClick={() => setShowModal(false)}
@@ -282,7 +272,7 @@ function GroupList() {
         </div>
       )}
 
-      {/* 리스트 목록 */}
+      {/* 그룹 리스트 */}
       <div
         style={{
           display: "flex",
@@ -292,88 +282,99 @@ function GroupList() {
           paddingBottom: "100px",
         }}
       >
-        {filteredGroups.map((g) => (
-          <div
-            key={g.id}
-            onClick={() => navigate(`/group-detail/${g.id}`)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "16px",
-              borderRadius: "20px",
-              border: `1px solid ${g.border}`,
-              backgroundColor: g.boxBg,
-              cursor: "pointer",
-              width: "327px",
-              height: "109px",
-              boxSizing: "border-box",
-            }}
-          >
-            {/* 프로필 이미지 */}
-            <div
-              style={{
-                width: "60px",
-                height: "60px",
-                borderRadius: "50%",
-                backgroundColor: g.profileTagBg,
-                border: `1px solid ${g.border}`,
-                marginRight: "16px",
-                flexShrink: 0,
-              }}
-            />
-
-            {/* 텍스트 정보 */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                alignItems: "flex-start",
-                flex: 1,
-                overflow: "hidden",
-              }}
-            >
+        {isLoading ? (
+          <p style={{ color: "#aaa" }}>불러오는 중...</p>
+        ) : filteredGroups.length === 0 ? (
+          <p style={{ color: "#aaa" }}>그룹이 없습니다</p>
+        ) : (
+          filteredGroups.map((g, index) => {
+            const theme = colorThemes[index % colorThemes.length];
+            return (
               <div
+                key={g.groupId}
+                onClick={() => navigate(`/group-detail/${g.groupId}`)}
                 style={{
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                  marginBottom: "2px",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "16px",
+                  borderRadius: "20px",
+                  border: `1px solid ${theme.border}`,
+                  backgroundColor: theme.boxBg,
+                  cursor: "pointer",
+                  width: "327px",
+                  height: "109px",
+                  boxSizing: "border-box",
                 }}
               >
-                {g.name}
-              </div>
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#666",
-                  marginBottom: "6px",
-                }}
-              >
-                인원 {g.count}명
-              </div>
+                {/* 프로필 원 */}
+                <div
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "50%",
+                    backgroundColor: theme.profileTagBg,
+                    border: `1px solid ${theme.border}`,
+                    marginRight: "16px",
+                    flexShrink: 0,
+                  }}
+                />
 
-              {/* 태그 영역 */}
-              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                {g.tags.map((t) => (
-                  <span
-                    key={t}
+                {/* 텍스트 */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "flex-start",
+                    flex: 1,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
                     style={{
-                      fontSize: "9px",
-                      backgroundColor: g.profileTagBg,
-                      border: `0.5px solid ${g.border}`,
-                      padding: "0px 6px",
-                      lineHeight: "1.8",
-                      borderRadius: "8px",
-                      color: "#555",
+                      fontWeight: "bold",
+                      fontSize: "16px",
+                      marginBottom: "2px",
                     }}
                   >
-                    #{t}
-                  </span>
-                ))}
+                    {g.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "#666",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    인원 {g.memberCount}명
+                  </div>
+
+                  {/* 해시태그 */}
+                  <div
+                    style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}
+                  >
+                    {g.hashtags.map((t) => (
+                      <span
+                        key={t}
+                        style={{
+                          fontSize: "9px",
+                          backgroundColor: theme.profileTagBg,
+                          border: `0.5px solid ${theme.border}`,
+                          padding: "0px 6px",
+                          lineHeight: "1.8",
+                          borderRadius: "8px",
+                          color: "#555",
+                        }}
+                      >
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
+            );
+          })
+        )}
       </div>
     </PageLayout>
   );

@@ -1,35 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import backIcon from "../assets/icon-back.png";
 import searchIcon from "../assets/icon-search.png";
-
-import dog from "../assets/animals/dog.png";
-import dragon from "../assets/animals/dragon.png";
-import horse from "../assets/animals/horse.png";
-import monkey from "../assets/animals/monkey.png";
-import mouse from "../assets/animals/mouse.png";
-import ox from "../assets/animals/ox.png";
-import pig from "../assets/animals/pig.png";
-import rabbit from "../assets/animals/rabbit.png";
-import rooster from "../assets/animals/rooster.png";
-import sheep from "../assets/animals/sheep.png";
-import snake from "../assets/animals/snake.png";
-import tiger from "../assets/animals/tiger.png";
-
-// 현재 내 친구 목록 (실제 데이터로 교체 필요함)
-const myFriends = [
-  { id: 1, name: "정다연", animal: pig },
-  { id: 2, name: "박하은", animal: rabbit },
-  { id: 3, name: "최비성", animal: dragon },
-  { id: 4, name: "송윤서", animal: sheep },
-  { id: 5, name: "권효정", animal: dog },
-  { id: 6, name: "이수민", animal: monkey },
-  { id: 7, name: "김지유", animal: horse },
-  { id: 8, name: "한지원", animal: tiger },
-  { id: 9, name: "오세린", animal: ox },
-  { id: 10, name: "강민지", animal: snake },
-];
+import { getFriendSummaries } from "../api/friend";
+import { createGroupWithMembers } from "../api/group";
+import { getCharacterImage } from "../utils/characterMap";
 
 function GroupCreate() {
   const navigate = useNavigate();
@@ -39,25 +15,39 @@ function GroupCreate() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState([]);
+  const [friendList, setFriendList] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const filteredFriends = myFriends.filter((f) => f.name.includes(searchText));
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        const res = await getFriendSummaries();
+        setFriendList(res.data);
+      } catch (err) {
+        console.error("친구 목록 불러오기 실패", err);
+      }
+    };
+    fetchFriends();
+  }, []);
+
+  const filteredFriends = friendList.filter((f) => f.name.includes(searchText));
 
   const toggleFriend = (friend) => {
     setSelectedFriends((prev) =>
-      prev.find((f) => f.id === friend.id)
-        ? prev.filter((f) => f.id !== friend.id)
+      prev.find((f) => f.friendId === friend.friendId)
+        ? prev.filter((f) => f.friendId !== friend.friendId)
         : [...prev, friend],
     );
   };
 
-  const isSelected = (id) => selectedFriends.some((f) => f.id === id);
+  const isSelected = (friendId) =>
+    selectedFriends.some((f) => f.friendId === friendId);
 
-  // 태그 추가
   const addTag = () => {
     const trimmed = tagInput.trim();
     if (!trimmed) return;
     if (tags.includes(trimmed)) {
-      // 중복 태그는 추가하지 않고 입력창만 비움
       setTagInput("");
       return;
     }
@@ -65,16 +55,43 @@ function GroupCreate() {
     setTagInput("");
   };
 
-  // 엔터 키 입력 처리
   const handleTagKeyDown = (e) => {
     if (e.key === "Enter") {
-      e.preventDefault(); // form submit 등 기본 동작 방지
+      e.preventDefault();
       addTag();
     }
   };
 
   const removeTag = (tagToRemove) => {
     setTags((prev) => prev.filter((tag) => tag !== tagToRemove));
+  };
+
+  const handleCreateGroup = async () => {
+    if (!groupName.trim()) {
+      setErrorMessage("그룹 이름을 입력해주세요");
+      return;
+    }
+    setIsSubmitting(true);
+    setErrorMessage("");
+    try {
+      await createGroupWithMembers({
+        name: groupName.trim(),
+        hashtags: tags,
+        friendIds: selectedFriends.map((f) => f.friendId),
+      });
+      navigate("/group-list");
+    } catch (err) {
+      const code = err.response?.data?.error?.code;
+      if (code === "DUPLICATE_GROUP_NAME") {
+        setErrorMessage("이미 같은 이름의 그룹이 있습니다");
+      } else if (code === "INSUFFICIENT_POINT") {
+        setErrorMessage("포인트가 부족합니다");
+      } else {
+        setErrorMessage("그룹 생성에 실패했습니다");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -201,7 +218,7 @@ function GroupCreate() {
           <img src={searchIcon} style={{ width: "18px" }} />
         </div>
 
-        {/* 드롭다운 친구 목록 */}
+        {/* 드롭다운 */}
         {showDropdown && (
           <div
             style={{
@@ -215,7 +232,7 @@ function GroupCreate() {
           >
             {filteredFriends.map((friend) => (
               <div
-                key={friend.id}
+                key={friend.friendId}
                 onClick={() => toggleFriend(friend)}
                 style={{
                   display: "flex",
@@ -225,7 +242,6 @@ function GroupCreate() {
                   borderBottom: "1px solid #f5f5f5",
                 }}
               >
-                {/* 프로필 */}
                 <div
                   style={{
                     width: "36px",
@@ -242,7 +258,7 @@ function GroupCreate() {
                   }}
                 >
                   <img
-                    src={friend.animal}
+                    src={getCharacterImage(friend.characterId)}
                     alt={friend.name}
                     style={{
                       width: "80%",
@@ -251,24 +267,22 @@ function GroupCreate() {
                     }}
                   />
                 </div>
-
-                {/* 이름 */}
                 <span style={{ flex: 1, fontSize: "14px" }}>{friend.name}</span>
-
-                {/* 체크박스 */}
                 <div
                   style={{
                     width: "20px",
                     height: "20px",
                     borderRadius: "4px",
-                    backgroundColor: isSelected(friend.id) ? "#333" : "white",
+                    backgroundColor: isSelected(friend.friendId)
+                      ? "#333"
+                      : "white",
                     border: "1px solid #ccc",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
-                  {isSelected(friend.id) && (
+                  {isSelected(friend.friendId) && (
                     <span style={{ color: "white", fontSize: "13px" }}>✓</span>
                   )}
                 </div>
@@ -297,7 +311,6 @@ function GroupCreate() {
           </div>
         )}
 
-        {/* 안내 문구 */}
         <div
           style={{
             fontSize: "12px",
@@ -308,6 +321,8 @@ function GroupCreate() {
         >
           그룹에 추가할 친구를 검색해주세요
         </div>
+
+        {/* 선택된 친구 칩 */}
         {selectedFriends.length > 0 && (
           <div
             style={{
@@ -319,7 +334,7 @@ function GroupCreate() {
           >
             {selectedFriends.map((friend) => (
               <div
-                key={friend.id}
+                key={friend.friendId}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -332,7 +347,7 @@ function GroupCreate() {
                 }}
               >
                 <img
-                  src={friend.animal}
+                  src={getCharacterImage(friend.characterId)}
                   style={{
                     width: "20px",
                     height: "20px",
@@ -401,7 +416,6 @@ function GroupCreate() {
           </button>
         </div>
 
-        {/* 추가된 태그 목록 */}
         {tags.length > 0 && (
           <div
             style={{
@@ -442,12 +456,25 @@ function GroupCreate() {
         )}
       </div>
 
+      {/* 에러 메시지 */}
+      {errorMessage && (
+        <p
+          style={{
+            color: "red",
+            fontSize: "13px",
+            textAlign: "center",
+            marginBottom: "12px",
+          }}
+        >
+          {errorMessage}
+        </p>
+      )}
+
       {/* 그룹 만들기 버튼 */}
       <div style={{ display: "flex", justifyContent: "center" }}>
         <button
-          onClick={() => {
-            navigate("/group-list");
-          }}
+          onClick={handleCreateGroup}
+          disabled={isSubmitting}
           style={{
             backgroundColor: "var(--color-primary)",
             color: "white",
@@ -456,10 +483,11 @@ function GroupCreate() {
             padding: "14px 60px",
             fontSize: "16px",
             fontWeight: "bold",
-            cursor: "pointer",
+            cursor: isSubmitting ? "default" : "pointer",
+            opacity: isSubmitting ? 0.7 : 1,
           }}
         >
-          그룹만들기
+          {isSubmitting ? "생성 중..." : "그룹만들기"}
         </button>
       </div>
     </PageLayout>

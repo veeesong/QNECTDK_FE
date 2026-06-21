@@ -1,53 +1,67 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
-
-import dogImg from "../assets/animals/dog.png";
-import dragonImg from "../assets/animals/dragon.png";
-import horseImg from "../assets/animals/horse.png";
-import monkeyImg from "../assets/animals/monkey.png";
-import mouseImg from "../assets/animals/mouse.png";
-import oxImg from "../assets/animals/ox.png";
-import pigImg from "../assets/animals/pig.png";
-import rabbitImg from "../assets/animals/rabbit.png";
-import roosterImg from "../assets/animals/rooster.png";
-import sheepImg from "../assets/animals/sheep.png";
-import snakeImg from "../assets/animals/snake.png";
-import tigerImg from "../assets/animals/tiger.png";
-
-const characterList = [
-  { id: "mouse", name: "Mouse", img: mouseImg, status: "available" },
-  { id: "cow", name: "Cow", img: oxImg, status: "available" },
-  { id: "tiger", name: "Tiger", img: tigerImg, status: "available" },
-  { id: "rabbit", name: "Rabbit", img: rabbitImg, status: "available" },
-  { id: "dragon", name: "Dragon", img: dragonImg, status: "completed" },
-  { id: "snake", name: "Snake", img: snakeImg, status: "completed" },
-  { id: "horse", name: "Horse", img: horseImg, status: "available" },
-  { id: "sheep", name: "Sheep", img: sheepImg, status: "available" },
-  { id: "monkey", name: "Monkey", img: monkeyImg, status: "available" },
-  { id: "rooster", name: "Chicken", img: roosterImg, status: "completed" },
-  { id: "dog", name: "Dog", img: dogImg, status: "available" },
-  { id: "pig", name: "Pig", img: pigImg, status: "available" },
-];
+import { getShopItems, getMyItems, purchaseItem } from "../api/shop";
+import { getCharacterImage, getCharacterName } from "../utils/characterMap";
 
 function BuyCharacter() {
   const navigate = useNavigate();
   const [step, setStep] = useState("list");
   const [selectedChar, setSelectedChar] = useState(null);
+  const [shopItems, setShopItems] = useState([]);
+  const [myItems, setMyItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [shopRes, myRes] = await Promise.all([
+          getShopItems(),
+          getMyItems(),
+        ]);
+        setShopItems(shopRes.data);
+        setMyItems(myRes.data);
+      } catch (err) {
+        console.error("캐릭터 목록 불러오기 실패", err);
+        setErrorMessage("데이터를 불러오지 못했습니다");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // 내가 보유한 itemId 목록
+  const ownedItemIds = myItems.map((item) => item.itemId);
 
   const handleSelectCharacter = (char) => {
     setSelectedChar(char);
     setStep("confirm");
   };
 
-  const handlePayment = () => {
-    setStep("success");
+  const handlePayment = async () => {
+    try {
+      await purchaseItem(selectedChar.itemId);
+      setStep("success");
+    } catch (err) {
+      const code = err.response?.data?.error?.code;
+      if (code === "INSUFFICIENT_POINT") {
+        setErrorMessage("포인트가 부족합니다");
+      } else if (code === "RESOURCE_CONFLICT") {
+        setErrorMessage("이미 보유한 캐릭터입니다");
+      } else {
+        setErrorMessage("구매에 실패했습니다");
+      }
+    }
   };
 
   const handleBack = () => {
     if (step === "confirm" || step === "success") {
       setStep("list");
+      setErrorMessage("");
     } else {
       navigate(-1);
     }
@@ -55,7 +69,7 @@ function BuyCharacter() {
 
   return (
     <PageLayout>
-      <Header title="포인트" onBack={handleBack} />
+      <Header title="캐릭터 구매" onBack={handleBack} />
 
       {step === "list" && (
         <div
@@ -67,79 +81,100 @@ function BuyCharacter() {
             paddingBottom: "40px",
           }}
         >
-          {characterList.map((char) => {
-            const isCompleted = char.status === "completed";
-            return (
-              <div
-                key={char.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  backgroundColor: isCompleted ? "#f5f5f5" : "#ffe3d1",
-                  border: isCompleted
-                    ? "2px solid #e0e0e0"
-                    : "2px solid #ffccb0",
-                  borderRadius: "16px",
-                  padding: "16px",
-                  justifyContent: "space-between",
-                }}
-              >
+          {isLoading ? (
+            <p style={{ textAlign: "center", color: "#aaa" }}>불러오는 중...</p>
+          ) : errorMessage ? (
+            <p style={{ textAlign: "center", color: "red" }}>{errorMessage}</p>
+          ) : (
+            shopItems.map((item) => {
+              const isOwned = ownedItemIds.includes(item.itemId);
+              const charImage = getCharacterImage(item.characterId);
+              const charName = getCharacterName(item.characterId);
+
+              return (
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "16px" }}
-                >
-                  <img
-                    src={char.img}
-                    alt={char.name}
-                    style={{
-                      width: "44px",
-                      height: "44px",
-                      objectFit: "contain",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "2px",
-                      height: "28px",
-                      backgroundColor: isCompleted ? "#d9d9d9" : "#ffccb0",
-                    }}
-                  />
-                </div>
-                <div
-                  onClick={() => !isCompleted && handleSelectCharacter(char)}
+                  key={item.itemId}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "12px",
-                    cursor: isCompleted ? "default" : "pointer",
+                    backgroundColor: isOwned ? "#f5f5f5" : "#ffe3d1",
+                    border: isOwned ? "2px solid #e0e0e0" : "2px solid #ffccb0",
+                    borderRadius: "16px",
+                    padding: "16px",
+                    justifyContent: "space-between",
                   }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontSize: "15px",
-                      fontWeight: "bold",
-                      color: isCompleted ? "#888" : "#333",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "16px",
                     }}
                   >
-                    {isCompleted ? "구매완료" : "구매하기"}
-                  </span>
-                  {!isCompleted && (
+                    <img
+                      src={charImage}
+                      alt={charName}
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        objectFit: "contain",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: "2px",
+                        height: "28px",
+                        backgroundColor: isOwned ? "#d9d9d9" : "#ffccb0",
+                      }}
+                    />
                     <span
                       style={{
-                        backgroundColor: "#ff6b35",
-                        color: "#fff",
-                        fontSize: "12px",
+                        fontSize: "14px",
                         fontWeight: "bold",
-                        padding: "4px 10px",
-                        borderRadius: "20px",
+                        color: isOwned ? "#888" : "#333",
                       }}
                     >
-                      200P
+                      {charName}
                     </span>
-                  )}
+                  </div>
+
+                  <div
+                    onClick={() => !isOwned && handleSelectCharacter(item)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      cursor: isOwned ? "default" : "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: "bold",
+                        color: isOwned ? "#888" : "#333",
+                      }}
+                    >
+                      {isOwned ? "보유중" : "구매하기"}
+                    </span>
+                    {!isOwned && (
+                      <span
+                        style={{
+                          backgroundColor: "#ff6b35",
+                          color: "#fff",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          padding: "4px 10px",
+                          borderRadius: "20px",
+                        }}
+                      >
+                        {item.price}P
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       )}
 
@@ -168,11 +203,12 @@ function BuyCharacter() {
             }}
           >
             <img
-              src={selectedChar.img}
-              alt={selectedChar.name}
+              src={getCharacterImage(selectedChar.characterId)}
+              alt={getCharacterName(selectedChar.characterId)}
               style={{ width: "100px", height: "100px", objectFit: "contain" }}
             />
           </div>
+
           <div
             style={{
               width: "100%",
@@ -184,7 +220,7 @@ function BuyCharacter() {
               justifyContent: "space-between",
               alignItems: "center",
               boxSizing: "border-box",
-              marginBottom: "20px",
+              marginBottom: "12px",
             }}
           >
             <span
@@ -195,10 +231,16 @@ function BuyCharacter() {
             <span
               style={{ fontWeight: "bold", fontSize: "18px", color: "#ff6b35" }}
             >
-              200P
+              {selectedChar.price}P
             </span>
           </div>
-          {/* 하단 버튼 로직 유지 */}
+
+          {errorMessage && (
+            <p style={{ color: "red", fontSize: "13px", marginBottom: "12px" }}>
+              {errorMessage}
+            </p>
+          )}
+
           <button
             onClick={handlePayment}
             style={{
