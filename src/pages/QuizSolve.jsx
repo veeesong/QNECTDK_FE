@@ -30,27 +30,20 @@ function QuizSolve() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isLocked, setIsLocked] = useState(false);
+
   const currentQuiz = quizList[currentIndex];
 
   const handleSelect = (idx) => {
-    if (isLocked) return; // 이미 답을 골랐으면 클릭 무시
+    setSelectedAnswer(idx);
+  };
 
-    setIsLocked(true); // 클릭 잠금
-    setSelectedAnswer(idx); // 선택된 답 표시
-
-    // 정답/오답 확인 로직 (필요시 점수 계산 추가)
-    const isCorrect = idx === currentQuiz.answer;
-
-    setTimeout(() => {
-      if (currentIndex < quizList.length - 1) {
-        setCurrentIndex((prev) => prev + 1);
-        setSelectedAnswer(null);
-        setIsLocked(false);
-      } else {
-        navigate("/quiz-result", { state: { friend, score: 80 } });
-      }
-    }, 1000); // 1초간 정답 표시를 확인할 시간을 줌
+  const handleNext = () => {
+    if (currentIndex < quizList.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
+      setSelectedAnswer(null);
+    } else {
+      navigate("/quiz-result", { state: { friend, score: 80 } });
+    }
   };
 
   return (
@@ -98,7 +91,7 @@ function QuizSolve() {
             border: "1.5px solid #F4804F",
             background: "#FFF",
             padding: "15px",
-            marginBottom: "50px",
+            marginBottom: "20px",
             textAlign: "center",
             fontWeight: "bold",
           }}
@@ -107,7 +100,13 @@ function QuizSolve() {
         </div>
 
         {currentQuiz.type === "multiple" ? (
-          <div style={{ width: "100%", maxWidth: "300px" }}>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "300px",
+              alignSelf: "flex-start",
+            }}
+          >
             {currentQuiz.options.map((opt, idx) => {
               const isSelected = selectedAnswer === idx;
               return (
@@ -115,25 +114,37 @@ function QuizSolve() {
                   key={idx}
                   onClick={() => handleSelect(idx)}
                   style={{
-                    padding: "15px",
-                    borderBottom: "1px solid #F4804F",
+                    padding: "15px 0",
                     cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "15px",
-                    backgroundColor: isSelected ? "#FFF5F0" : "transparent",
                   }}
                 >
                   <div
                     style={{
-                      width: "20px",
-                      height: "20px",
-                      borderRadius: "50%",
-                      border: "1.5px solid #F4804F",
-                      backgroundColor: isSelected ? "#F4804F" : "transparent",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "40px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        border: "1.5px solid #F4804F",
+                        backgroundColor: isSelected ? "#F4804F" : "transparent",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ whiteSpace: "nowrap" }}>{opt}</span>
+                  </div>
+                  <div
+                    style={{
+                      marginLeft: "35px",
+                      width: "180px",
+                      borderBottom: "1px solid #F4804F",
                     }}
                   />
-                  {opt}
                 </div>
               );
             })}
@@ -161,6 +172,27 @@ function QuizSolve() {
               </button>
             ))}
           </div>
+        )}
+
+        {/* 선택 후 노출되는 다음 버튼 */}
+        {selectedAnswer !== null && (
+          <button
+            onClick={handleNext}
+            style={{
+              marginTop: "40px",
+              width: "299px",
+              padding: "14px 0",
+              borderRadius: "30px",
+              border: "none",
+              backgroundColor: "#F4804F",
+              color: "#FFF",
+              fontSize: "16px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            {currentIndex < quizList.length - 1 ? "다음" : "결과 보기"}
+          </button>
         )}
       </div>
     </PageLayout>

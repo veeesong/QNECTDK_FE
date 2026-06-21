@@ -54,7 +54,7 @@ function QuizConfirm() {
 
         <div
           style={{
-            padding: "8px 20px",
+            padding: "4px 20px",
             borderRadius: "20px",
             backgroundColor: friend.bgColor,
             border: "1px solid #000",

@@ -50,86 +50,59 @@ function QuizResult() {
         </h3>
         <div
           style={{
-            padding: "8px 20px",
+            padding: "4px 20px",
             borderRadius: "20px",
             backgroundColor: friend.bgColor,
             border: "1px solid #000",
             fontSize: "14px",
-            marginBottom: "40px",
+            marginBottom: "24px",
           }}
         >
           05년생 | 동덕여자대학교 | 여성
         </div>
 
-        {/* 결과 박스 (흰색 카드) */}
+        {/* 완료 안내 텍스트 - 카드 없이 일반 텍스트 */}
+        <p
+          style={{
+            fontSize: "18px",
+            fontWeight: "bold",
+            marginBottom: "20px",
+            marginTop: 0,
+          }}
+        >
+          모두 완료했습니다!
+        </p>
+
+        {/* 점수 알약 박스 */}
         <div
           style={{
-            width: "100%",
-            maxWidth: "340px",
-            backgroundColor: "#FFFFFF",
-            borderRadius: "24px",
-            padding: "30px 20px",
-            textAlign: "center",
-            border: "1px solid #eee",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+            padding: "12px 24px",
+            borderRadius: "30px",
+            backgroundColor: "#FFF5F0",
+            border: "1px solid #FF8C69",
+            fontSize: "16px",
+            fontWeight: "bold",
+            color: "#000",
+            marginBottom: "12px",
+          }}
+        >
+          점수: {score}/100
+        </div>
+
+        {/* 포인트 알약 박스 */}
+        <div
+          style={{
+            padding: "12px 24px",
+            borderRadius: "30px",
+            backgroundColor: "#FFF5F0",
+            border: "1px solid #FF8C69",
+            fontSize: "16px",
+            fontWeight: "bold",
+            color: "#000",
             marginBottom: "40px",
           }}
         >
-          <p
-            style={{
-              fontSize: "18px",
-              fontWeight: "bold",
-              marginBottom: "24px",
-            }}
-          >
-            퀴즈 완료!
-          </p>
-
-          {/* 점수와 포인트 박스 */}
-          <div
-            style={{ display: "flex", gap: "10px", justifyContent: "center" }}
-          >
-            <div
-              style={{
-                flex: 1,
-                padding: "15px 10px",
-                borderRadius: "16px",
-                backgroundColor: "#FFF5F0",
-                border: "1px solid #FF8C69",
-              }}
-            >
-              <div style={{ fontSize: "12px", color: "#666" }}>점수</div>
-              <div
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                  color: "#FF8C69",
-                }}
-              >
-                {score}점
-              </div>
-            </div>
-            <div
-              style={{
-                flex: 1,
-                padding: "15px 10px",
-                borderRadius: "16px",
-                backgroundColor: "#FFF5F0",
-                border: "1px solid #FF8C69",
-              }}
-            >
-              <div style={{ fontSize: "12px", color: "#666" }}>획득 포인트</div>
-              <div
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                  color: "#FF8C69",
-                }}
-              >
-                +10P
-              </div>
-            </div>
-          </div>
+          10P 획득 완료
         </div>
 
         {/* 홈으로 가기 버튼 */}
