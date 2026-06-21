@@ -1,87 +1,84 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 import Button from "../components/Button";
-
-import mouseImg from "../assets/animals/mouse.png";
-import roosterImg from "../assets/animals/rooster.png";
-import dragonImg from "../assets/animals/dragon.png";
-import sheepImg from "../assets/animals/sheep.png";
-import tigerImg from "../assets/animals/tiger.png";
-import pigImg from "../assets/animals/pig.png";
-import snakeImg from "../assets/animals/snake.png";
+import { getFriendsQuizzes } from "../api/quiz"; // TODO: 실제 함수명에 맞게 수정
+import { getCharacterImage } from "../utils/characterMap";
 
 function Quiz() {
   const navigate = useNavigate();
+  const [friendList, setFriendList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const friendList = [
-    {
-      name: "이무영",
-      animalImg: mouseImg,
-      solved: 0,
-      total: 5,
-      completed: false,
-      bgColor: "#D3DFFF",
-    },
-    {
-      name: "이서현",
-      animalImg: roosterImg,
-      solved: 5,
-      total: 5,
-      completed: true,
-      bgColor: "#FFDBDB",
-    },
-    {
-      name: "김민혁",
-      animalImg: dragonImg,
-      solved: 4,
-      total: 5,
-      completed: true,
-      bgColor: "#DEFECD",
-    },
-    {
-      name: "강민정",
-      animalImg: sheepImg,
-      solved: 3,
-      total: 5,
-      completed: true,
-      bgColor: "#FFDECC",
-    },
-    {
-      name: "구서연",
-      animalImg: tigerImg,
-      solved: 4,
-      total: 5,
-      completed: true,
-      bgColor: "#FFFAD0",
-    },
-    {
-      name: "김경민",
-      animalImg: pigImg,
-      solved: 0,
-      total: 5,
-      completed: false,
-      bgColor: "#FFE0F9",
-    },
-    {
-      name: "정다연",
-      animalImg: snakeImg,
-      solved: 0,
-      total: 5,
-      completed: false,
-      bgColor: "#D3DFFF",
-    },
-  ];
+  useEffect(() => {
+    const fetchFriendsWithQuiz = async () => {
+      try {
+        // GET /api/quizzes/friends 한 번으로 person + 퀴즈정보가 함께 옴
+        const res = await getFriendsQuizzes();
+
+        const results = res.data
+          // 활성 퀴즈가 없는 친구(hasQuiz: false)는 목록에서 제외
+          .filter((item) => item.hasQuiz)
+          .map((item) => ({
+            quizId: item.quizId,
+            userId: item.person.userId,
+            name: item.person.name,
+            school: item.person.school,
+            gender: item.person.gender,
+            birthYear: item.person.birthYear,
+            animalImg: getCharacterImage(item.person.characterId),
+            total: item.totalQuestions,
+            solved: item.attempted ? item.score : 0,
+            completed: item.attempted,
+          }));
+
+        setFriendList(results);
+      } catch (err) {
+        setError("친구 목록을 불러오지 못했어요.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFriendsWithQuiz();
+  }, []);
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <Header title="퀴즈" onBack={() => navigate(-1)} />
+        <p style={{ textAlign: "center", marginTop: "60px" }}>불러오는 중...</p>
+      </PageLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageLayout>
+        <Header title="퀴즈" onBack={() => navigate(-1)} />
+        <p style={{ textAlign: "center", marginTop: "60px", color: "red" }}>
+          {error}
+        </p>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>
       <Header title="퀴즈" onBack={() => navigate(-1)} />
 
       <div style={{ padding: "0 20px" }}>
-        {friendList.map((f, i) => (
+        {friendList.length === 0 && (
+          <p style={{ textAlign: "center", marginTop: "60px", color: "#aaa" }}>
+            풀 수 있는 퀴즈가 없어요
+          </p>
+        )}
+
+        {friendList.map((f) => (
           <div
-            key={i}
+            key={f.userId}
             style={{
               borderBottom: "1px solid #e0e0e0",
               padding: "16px 0",
@@ -96,7 +93,7 @@ function Quiz() {
                   width: "60px",
                   height: "60px",
                   borderRadius: "50%",
-                  backgroundColor: f.bgColor,
+                  backgroundColor: "#ffffff",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -118,7 +115,7 @@ function Quiz() {
                   {f.name}
                 </div>
                 <div style={{ display: "flex", gap: "5px", marginTop: "8px" }}>
-                  {[...Array(5)].map((_, idx) => (
+                  {[...Array(f.total)].map((_, idx) => (
                     <div
                       key={idx}
                       style={{

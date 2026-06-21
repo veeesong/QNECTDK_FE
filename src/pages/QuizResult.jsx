@@ -3,12 +3,30 @@ import { useLocation, useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 
+// birthYear(4자리) -> "05년생" 형태로 변환
+const formatBirthYear = (birthYear) => {
+  if (!birthYear) return null;
+  return `${String(birthYear).slice(2)}년생`;
+};
+
+const formatGender = (gender) => {
+  if (gender === "MALE") return "남성";
+  if (gender === "FEMALE") return "여성";
+  return null;
+};
+
 function QuizResult() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const { friend, score } = state || { friend: {}, score: 0 };
+  const { friend, score, total, earnedPoint } = state || {};
 
   if (!friend) return null;
+
+  const infoParts = [
+    formatBirthYear(friend.birthYear),
+    friend.school,
+    formatGender(friend.gender),
+  ].filter(Boolean);
 
   return (
     <PageLayout>
@@ -28,7 +46,7 @@ function QuizResult() {
             width: "120px",
             height: "120px",
             borderRadius: "50%",
-            backgroundColor: friend.bgColor,
+            backgroundColor: "#ffffff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -48,20 +66,22 @@ function QuizResult() {
         >
           {friend.name}
         </h3>
-        <div
-          style={{
-            padding: "4px 20px",
-            borderRadius: "20px",
-            backgroundColor: friend.bgColor,
-            border: "1px solid #000",
-            fontSize: "14px",
-            marginBottom: "24px",
-          }}
-        >
-          05년생 | 동덕여자대학교 | 여성
-        </div>
+        {infoParts.length > 0 && (
+          <div
+            style={{
+              padding: "4px 20px",
+              borderRadius: "20px",
+              backgroundColor: "#ffffff",
+              border: "1px solid #000",
+              fontSize: "14px",
+              marginBottom: "24px",
+            }}
+          >
+            {infoParts.join(" | ")}
+          </div>
+        )}
 
-        {/* 완료 안내 텍스트 - 카드 없이 일반 텍스트 */}
+        {/* 완료 안내 텍스트 */}
         <p
           style={{
             fontSize: "18px",
@@ -83,27 +103,29 @@ function QuizResult() {
             fontSize: "16px",
             fontWeight: "bold",
             color: "#000",
-            marginBottom: "12px",
+            marginBottom: earnedPoint > 0 ? "12px" : "28px",
           }}
         >
-          점수: {score}/100
+          점수: {score}/{total}
         </div>
 
-        {/* 포인트 알약 박스 */}
-        <div
-          style={{
-            padding: "12px 24px",
-            borderRadius: "30px",
-            backgroundColor: "#FFF5F0",
-            border: "1px solid #FF8C69",
-            fontSize: "16px",
-            fontWeight: "bold",
-            color: "#000",
-            marginBottom: "40px",
-          }}
-        >
-          10P 획득 완료
-        </div>
+        {/* 포인트 적립 배지 (친구 퀴즈 첫 풀기일 때만 적립됨) */}
+        {earnedPoint > 0 && (
+          <div
+            style={{
+              padding: "8px 18px",
+              borderRadius: "30px",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #FF8C69",
+              fontSize: "13px",
+              fontWeight: "bold",
+              color: "#FF8C69",
+              marginBottom: "28px",
+            }}
+          >
+            {earnedPoint}P 획득 완료
+          </div>
+        )}
 
         {/* 홈으로 가기 버튼 */}
         <button
@@ -119,6 +141,7 @@ function QuizResult() {
             fontWeight: "bold",
             fontSize: "16px",
             cursor: "pointer",
+            marginTop: "8px",
           }}
         >
           홈으로 가기

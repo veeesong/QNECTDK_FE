@@ -3,12 +3,30 @@ import { useLocation, useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
 
+// birthYear(4자리) -> "05년생" 형태로 변환
+const formatBirthYear = (birthYear) => {
+  if (!birthYear) return null;
+  return `${String(birthYear).slice(2)}년생`;
+};
+
+const formatGender = (gender) => {
+  if (gender === "MALE") return "남성";
+  if (gender === "FEMALE") return "여성";
+  return null;
+};
+
 function QuizConfirm() {
   const { state } = useLocation();
   const navigate = useNavigate();
   const { friend } = state || {};
 
   if (!friend) return null;
+
+  const infoParts = [
+    formatBirthYear(friend.birthYear),
+    friend.school,
+    formatGender(friend.gender),
+  ].filter(Boolean);
 
   return (
     <PageLayout>
@@ -27,7 +45,7 @@ function QuizConfirm() {
             width: "120px",
             height: "120px",
             borderRadius: "50%",
-            backgroundColor: friend.bgColor,
+            backgroundColor: "#ffffff",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -52,20 +70,22 @@ function QuizConfirm() {
           {friend.name}
         </h3>
 
-        <div
-          style={{
-            padding: "4px 20px",
-            borderRadius: "20px",
-            backgroundColor: friend.bgColor,
-            border: "1px solid #000",
-            fontSize: "14px",
-            color: "#333",
-            marginBottom: "40px",
-            fontWeight: "500",
-          }}
-        >
-          05년생 | 동덕여자대학교 | 여성
-        </div>
+        {infoParts.length > 0 && (
+          <div
+            style={{
+              padding: "4px 20px",
+              borderRadius: "20px",
+              backgroundColor: "#F4F4F4",
+              border: "1px solid #000",
+              fontSize: "14px",
+              color: "#333",
+              marginBottom: "40px",
+              fontWeight: "500",
+            }}
+          >
+            {infoParts.join(" | ")}
+          </div>
+        )}
 
         <div
           style={{

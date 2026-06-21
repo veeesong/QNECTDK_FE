@@ -1,48 +1,118 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 import Header from "../components/Header";
+import { getFriendQuiz, submitQuizAttempt } from "../api/quiz";
 
 function QuizSolve() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const { friend } = state || { friend: { name: "친구" } };
+  const { friend } = state || {};
 
-  const quizList = [
-    {
-      type: "multiple",
-      question: `${friend.name} 님의 학교는 어디일까요?`,
-      options: [
-        "동덕여자대학교",
-        "덕성여자대학교",
-        "성신여자대학교",
-        "숙명여자대학교",
-      ],
-      answer: 0,
-    },
-    {
-      type: "ox",
-      question: `${friend.name} 님의 취미는 음악감상입니다.`,
-      options: ["O", "X"],
-      answer: 0,
-    },
-  ];
-
+  const [quizId, setQuizId] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  // questionId -> 제출용 answer 값 누적
+  const [answers, setAnswers] = useState({});
 
-  const currentQuiz = quizList[currentIndex];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!friend) return;
+    const fetchQuiz = async () => {
+      try {
+        const res = await getFriendQuiz(friend.userId);
+        if (!res.data.solvable) {
+          setError(
+            "아직 이 친구의 퀴즈를 풀 수 없어요. (프로필을 먼저 완성해주세요)",
+          );
+          return;
+        }
+        setQuizId(res.data.quizId);
+        setQuestions(res.data.questions || []);
+      } catch (err) {
+        setError("퀴즈를 불러오지 못했어요.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuiz();
+  }, [friend]);
+
+  if (!friend) return null;
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <Header title="퀴즈" onBack={() => navigate(-1)} />
+        <p style={{ textAlign: "center", marginTop: "60px" }}>불러오는 중...</p>
+      </PageLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageLayout>
+        <Header title="퀴즈" onBack={() => navigate(-1)} />
+        <p style={{ textAlign: "center", marginTop: "60px", color: "red" }}>
+          {error}
+        </p>
+      </PageLayout>
+    );
+  }
+
+  const currentQuiz = questions[currentIndex];
+  const isOx = currentQuiz.type === "OX";
+  const optionLabels = isOx
+    ? ["O", "X"]
+    : (currentQuiz.options || []).map((o) => o.content);
 
   const handleSelect = (idx) => {
     setSelectedAnswer(idx);
   };
 
-  const handleNext = () => {
-    if (currentIndex < quizList.length - 1) {
+  const handleNext = async () => {
+    // 현재 문제의 답을 누적 저장
+    const answerValue = optionLabels[selectedAnswer];
+    const newAnswers = {
+      ...answers,
+      [currentQuiz.questionId]: answerValue,
+    };
+    setAnswers(newAnswers);
+
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedAnswer(null);
-    } else {
-      navigate("/quiz-result", { state: { friend, score: 80 } });
+      return;
+    }
+
+    // 마지막 문제 -> 제출
+    setSubmitting(true);
+    try {
+      const payload = Object.entries(newAnswers).map(
+        ([questionId, answer]) => ({
+          questionId: Number(questionId),
+          answer,
+        }),
+      );
+      const res = await submitQuizAttempt(friend.userId, payload);
+      navigate("/quiz-result", {
+        state: {
+          friend,
+          score: res.data.score,
+          total: res.data.total,
+          // 친구 퀴즈는 "처음 풀 때"만 10P가 적립됨(명세 기준).
+          // 이 화면까지 온 것 자체가 미응시 친구라는 뜻이라
+          // (Quiz.jsx에서 이미 완료된 친구는 클릭이 막혀있음) 항상 첫 풀기에 해당함.
+          earnedPoint: !friend.completed ? 10 : 0,
+        },
+      });
+    } catch (err) {
+      setError("답안 제출에 실패했어요. 다시 시도해주세요.");
+      setSubmitting(false);
     }
   };
 
@@ -59,7 +129,7 @@ function QuizSolve() {
           margin: "0 auto",
         }}
       >
-        {quizList.map((_, i) => (
+        {questions.map((_, i) => (
           <div
             key={i}
             style={{
@@ -96,10 +166,10 @@ function QuizSolve() {
             fontWeight: "bold",
           }}
         >
-          {currentQuiz.question}
+          {currentQuiz.content}
         </div>
 
-        {currentQuiz.type === "multiple" ? (
+        {!isOx ? (
           <div
             style={{
               width: "100%",
@@ -107,7 +177,7 @@ function QuizSolve() {
               alignSelf: "flex-start",
             }}
           >
-            {currentQuiz.options.map((opt, idx) => {
+            {optionLabels.map((opt, idx) => {
               const isSelected = selectedAnswer === idx;
               return (
                 <div
@@ -151,7 +221,7 @@ function QuizSolve() {
           </div>
         ) : (
           <div style={{ display: "flex", gap: "40px" }}>
-            {currentQuiz.options.map((opt, idx) => (
+            {optionLabels.map((opt, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSelect(idx)}
@@ -174,10 +244,16 @@ function QuizSolve() {
           </div>
         )}
 
-        {/* 선택 후 노출되는 다음 버튼 */}
+        {error && (
+          <p style={{ color: "red", fontSize: "13px", marginTop: "16px" }}>
+            {error}
+          </p>
+        )}
+
         {selectedAnswer !== null && (
           <button
             onClick={handleNext}
+            disabled={submitting}
             style={{
               marginTop: "40px",
               width: "299px",
@@ -188,10 +264,15 @@ function QuizSolve() {
               color: "#FFF",
               fontSize: "16px",
               fontWeight: "bold",
-              cursor: "pointer",
+              cursor: submitting ? "default" : "pointer",
+              opacity: submitting ? 0.7 : 1,
             }}
           >
-            {currentIndex < quizList.length - 1 ? "다음" : "결과 보기"}
+            {submitting
+              ? "제출 중..."
+              : currentIndex < questions.length - 1
+                ? "다음"
+                : "결과 보기"}
           </button>
         )}
       </div>
